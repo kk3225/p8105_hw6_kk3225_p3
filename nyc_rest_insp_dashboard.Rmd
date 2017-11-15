@@ -4,6 +4,8 @@ output:
   flexdashboard::flex_dashboard:
     orientation: columns
     vertical_layout: fill
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -18,11 +20,30 @@ library(jsonlite)
 library(plotly)
 library(readr)
 library(janitor)
+library(tidyverse)
+library(tidytext)
+library(stringr)
+library(forcats)
+library(viridisLite)
+library(viridis)
+library(ggplot2)
+library(ggridges)
+library(stats)
 
 # Read NYC inspections data
 nyc_inspections = read_csv("./data/DOHMH_New_York_City_Restaurant_Inspection_Results.csv.gz",
-                           col_types = "cccccccccccccccccc") %>%
-  clean_names()
+                           col_types = "cccccccccccccccccc", na = c("NA", "N/A")) %>%
+    clean_names()
+  
+tidy_restaurant = nyc_inspections %>%  
+filter(grade %in% c("A", "B", "C"),
+       !boro %in% c("Missing")) %>% 
+  mutate(inspection_num = row_number(),
+         boro = str_to_title(boro),
+         id = camis) %>% 
+  select(inspection_num, id, inspection_date, boro, grade, score, dba, cuisine_description, street, zipcode, violation_description, critical_flag)
+
+
 
 
 ```
@@ -34,12 +55,23 @@ Column {data-width=350}
 ### Chart A
 
 ```{r}
+tidy_restaurant%>%
+  select(boro,grade)%>%
+  count(boro,grade)%>%
+  mutate(boro = fct_reorder(boro, n))%>%
+  spread(key = grade, value =n)%>%
+ plot_ly(x = ~boro, y = ~A, type = 'bar', name = 'Grade A')%>% 
+  add_trace(y = ~B, name = 'Grade B') %>% 
+  add_trace(y = ~C, name = 'Grade C') %>% 
+  layout(title = "Percentage of Grades for Each Borough in NYC", yaxis = list(title = 'Percentage (%)'),barmode = "stack")
 
 ```
 
 ### Chart B
 
 ```{r}
+nyc_inspections%>%
+  separte(inspection_date, into = c("year", "month", "date"))
 
 ```
 
@@ -57,4 +89,3 @@ Column {data-width=350}
 ```{r}
 
 ```
-
