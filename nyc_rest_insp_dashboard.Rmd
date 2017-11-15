@@ -1,0 +1,60 @@
+---
+title: "NYC Restaurant Inspections "
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+```
+
+```{r setup_data, cache = TRUE}
+# Attach required libraries
+library(tidyverse)
+library(httr)
+library(jsonlite)
+library(plotly)
+library(readr)
+library(janitor)
+
+# Read NYC inspections data
+nyc_inspections = read_csv("./data/DOHMH_New_York_City_Restaurant_Inspection_Results.csv.gz",
+                           col_types = "cccccccccccccccccc") %>%
+  clean_names()
+
+
+```
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r}
+
+```
+
+### Chart B
+
+```{r}
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart C
+
+```{r}
+
+```
+
+### Chart D
+
+```{r}
+
+```
+

@@ -1,0 +1,13 @@
+name: "NYC Restaurant Inspections"
+output_dir: "."
+navbar:
+  title: "Home"
+  right:
+    - text: "dashboard"
+      href: nyc_rest_insp_dashboard.html
+    - icon: fa-github fa-lg
+      href: http://github.com/faithparsons/
+    - icon: fa-github fa-lg
+      href: http://github.com/<YOUR_GH_NAME>/
+output:
+  html_document
