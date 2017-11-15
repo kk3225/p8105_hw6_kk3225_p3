@@ -60,6 +60,10 @@ tidy_restaurant%>%
   count(boro,grade)%>%
   mutate(boro = fct_reorder(boro, n))%>%
   spread(key = grade, value =n)%>%
+  mutate(total= A+B+C,
+         A = A/total*100,
+         B = B/total*100,
+         C = C/total*100)%>%
  plot_ly(x = ~boro, y = ~A, type = 'bar', name = 'Grade A')%>% 
   add_trace(y = ~B, name = 'Grade B') %>% 
   add_trace(y = ~C, name = 'Grade C') %>% 
