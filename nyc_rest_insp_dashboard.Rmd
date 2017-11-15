@@ -37,15 +37,15 @@ nyc_inspections = read_csv("./data/DOHMH_New_York_City_Restaurant_Inspection_Res
   
 tidy_restaurant = nyc_inspections %>%  
 filter(grade %in% c("A", "B", "C"),
-       !boro %in% c("Missing")) %>% 
+       !boro %in% "Missing") %>% 
+  separate(inspection_date, into = c("date", "remove"), sep ="T")%>%
+  select(-remove)%>%
   mutate(inspection_num = row_number(),
          boro = str_to_title(boro),
-         id = camis) %>% 
-  select(inspection_num, id, inspection_date, boro, grade, score, dba, cuisine_description, street, zipcode, violation_description, critical_flag)
-
-
-
-
+         id = camis,
+         cusin= cuisine_description
+         ) %>% 
+  select(inspection_num, id, date, boro, grade, score, dba, cuisine_description, street, zipcode, violation_description, critical_flag)
 ```
 
 
@@ -64,15 +64,18 @@ tidy_restaurant%>%
   add_trace(y = ~B, name = 'Grade B') %>% 
   add_trace(y = ~C, name = 'Grade C') %>% 
   layout(title = "Percentage of Grades for Each Borough in NYC", yaxis = list(title = 'Percentage (%)'),barmode = "stack")
-
 ```
 
 ### Chart B
 
 ```{r}
-nyc_inspections%>%
-  separte(inspection_date, into = c("year", "month", "date"))
-
+tidy_restaurant%>%
+  mutate(date =  as.POSIXct(date),
+         date = lubridate::floor_date(date, unit ="month"))%>%
+  count(date, grade)%>%
+  filter(date!='1900-01-01')%>%  
+  plot_ly(x = ~date, y = ~n,type = 'scatter', mode = 'lines', color = ~grade)%>%
+  layout(title = "Change of the Number of Grades in Time", yaxis = list(title = "Freq of Grades"), xaxis = list(title = "Time")) 
 ```
 
 Column {data-width=350}
