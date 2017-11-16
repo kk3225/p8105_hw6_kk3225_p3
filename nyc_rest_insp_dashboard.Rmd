@@ -18,9 +18,6 @@ library(forcats)
 library(viridisLite)
 library(viridis)
 library(lubridate)
-#library(ggplot2)
-#library(ggridges)
-#library(stats)
 ```
 
 ```{r setup_data, cache = TRUE}
@@ -100,7 +97,7 @@ cuisine_violations = left_join(ncuisines, violations, by = "cusin")
 Column {data-width=350}
 -----------------------------------------------------------------------
 
-### Chart A
+### Percentage of Grades for Each Borough In NYC
 
 ```{r}
 tidy_restaurant%>%
@@ -118,7 +115,7 @@ tidy_restaurant%>%
   layout(title = "Percentage of Grades for Each Borough in NYC", yaxis = list(title = 'Percentage (%)'), barmode = "stack")
 ```
 
-### Chart B
+### Change of the Number of Grades in Time
 
 ```{r}
 tidy_restaurant%>%

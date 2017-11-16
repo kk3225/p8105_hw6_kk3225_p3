@@ -40,8 +40,6 @@ tidy_restaurant = nyc_inspections %>%
   select(inspection_num, id, date, month, year, boro, grade, score, dba, 
          cusin, street, zipcode, violation_description, critical_flag, inspection_type,
          violation_code, action)
-
-
 ```
 
 
@@ -78,7 +76,7 @@ radioButtons("grade_choice", label = h3("Choose Grade"),
 Row
 -----------------------------------------------------------------------
 
-### Chart A
+### Percentage of Grades for Each Borough In NYC
 
 ```{r}
 
@@ -103,15 +101,53 @@ renderPlotly({
 Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
 
-### Chart B
+### Change of the Number of Grades in Time
 
 ```{r}
-
+renderPlotly({tidy_restaurant%>%
+  mutate(date =  as.POSIXct(date),
+         date = lubridate::floor_date(date, unit ="month"))%>%
+  count(date, grade)%>%
+  filter(date!='1900-01-01')%>%  
+  plot_ly(x = ~date, y = ~n, type = 'scatter', mode = 'lines', color = ~grade)%>%
+  layout(title = "Change of the Number of Grades in Time", yaxis = list(title = "Freq of Grades"), xaxis = list(title = "Time")) })
 ```
 
-### Chart C
+###  Critical violations in year 2016
 
 ```{r}
+renderPlotly({
+  tidy_restaurant %>%
+  filter(critical_flag != "Not Applicable" & year == 2016) %>%
+  group_by(boro, month, critical_flag) %>%
+  count() %>% 
+  ungroup() %>%
+  spread(key = critical_flag, value = n) %>%
+  clean_names() %>% 
+  mutate(pct_critical = 100 * (critical / (critical + not_critical)),
+         pct_critical = round(pct_critical, 2)) %>%
+  plot_ly (x = ~month, y = ~critical, type = "scatter", mode = "lines", color = ~boro) %>%
+    layout(
+      xaxis = list(title = "Month"),
+      yaxis = list(title = "Total critical violations")
+    )
 
+})
+```
+
+### Number of restaurants by cuisine type and number of violations by a single restaurant
+```{r}
+renderPlotly({
+  cuisine_violations %>%
+  mutate(text_label = str_c("Cuisine: ", cusin, 
+                            "\nNumber of restaurants: ", format(nresto, nsmall=1, big.mark = ","),
+                            "\nMax violations: ", max_viol)) %>%
+  plot_ly(x = ~max_viol, y = ~nresto, type = "scatter", mode = "markers",
+          text = ~text_label) %>%
+    layout(
+      xaxis = list(title = "Number of restaurants per cuisine type"),
+      yaxis = list(title = "Max violations by a restaurant")
+    )
+})
 ```
 

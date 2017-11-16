@@ -4,4 +4,8 @@ title: "NYC Restaurant Inspections!"
 
 ### Restaurant
 
-This is for Problem 3.
+### Link to the Homework 6 problems
+
+[Problem 1](https://www.google.com)
+[Problem 2](https://www.google.com)
+[Problem 3](https://www.google.com)
