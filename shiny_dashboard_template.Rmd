@@ -12,12 +12,65 @@ library(shiny)
 library(plotly)
 library(janitor)
 library(forcats)
+library(readr)
+library(lubridate)
+library(tidyverse)
+library(stringr)
 ```
+
+```{r get_data}
+nyc_inspections = read_csv("./data/DOHMH_New_York_City_Restaurant_Inspection_Results.csv.gz",
+                           col_types = "cccccccccccccccccc", na = c("NA", "N/A")) %>%
+  clean_names() 
+
+tidy_restaurant = nyc_inspections %>%  
+  filter(grade %in% c("A", "B", "C") & 
+       !boro %in% "Missing") %>% 
+  # Also remove cuisine description
+  filter(cuisine_description != " Not Listed/Not Applicable") %>%
+  separate(inspection_date, into = c("date", "remove"), sep ="T")%>%
+  select(-remove)%>%
+  mutate(inspection_num = row_number(),
+         boro = str_to_title(boro),
+         id = camis,
+         cusin = cuisine_description,
+         month = months(as.Date(date)),
+         month = factor(month, levels = month.name),
+         year = as.numeric(substr(date, 1, 4))) %>% 
+  select(inspection_num, id, date, month, year, boro, grade, score, dba, 
+         cusin, street, zipcode, violation_description, critical_flag, inspection_type,
+         violation_code, action)
+
+
+```
+
 
 Column {.sidebar}
 -----------------------------------------------------------------------
 
 ```{r}
+boros = tidy_restaurant %>% distinct(boro) %>% pull()
+cuisines = tidy_restaurant %>% distinct(cusin) %>% pull()
+
+# selectInput widget
+selectInput("boro_choice", label = h3("Select boro"),
+            choices = boros, selected = "Manhattan")
+
+# selectInput widget
+selectInput("cuisine_choice", label = h3("Select cuisine type"),
+            choices = cuisines, selected = "American")
+
+
+## sliderInput widget
+
+# radioButtons widget
+grade_choice = tidy_restaurant %>% distinct(grade) %>% pull()
+
+radioButtons("grade_choice", label = h3("Choose Grade"),
+    choices = grade_choice, 
+    selected = "A")
+
+
 
 ```
 
@@ -29,6 +82,22 @@ Row
 
 ```{r}
 
+renderPlotly({
+  tidy_restaurant%>%
+    filter(cusin == input$cuisine_choice ) %>%
+  select(boro, grade)%>%
+  count(boro, grade)%>%
+  mutate(boro = fct_reorder(boro, n))%>%
+  spread(key = grade, value =n)%>%
+  mutate(total= A+B+C,
+         A = A/total*100,
+         B = B/total*100,
+         C = C/total*100)%>%
+ plot_ly(x = ~boro, y = ~A, type = 'bar', name = 'Grade A')%>% 
+  add_trace(y = ~B, name = 'Grade B') %>% 
+  add_trace(y = ~C, name = 'Grade C') %>% 
+  layout(title = "Percentage of Grades for Each Borough in NYC", yaxis = list(title = 'Percentage (%)'), barmode = "stack")
+})
 ```
 
 Row {.tabset .tabset-fade}
