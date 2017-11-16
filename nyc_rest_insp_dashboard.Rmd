@@ -33,8 +33,10 @@ nyc_inspections = read_csv("./data/DOHMH_New_York_City_Restaurant_Inspection_Res
 
 # Tidy up the inspections data
 tidy_restaurant = nyc_inspections %>%  
-filter(grade %in% c("A", "B", "C") & 
+  filter(grade %in% c("A", "B", "C") & 
        !boro %in% "Missing") %>% 
+  # Also remove cuisine description
+  filter(cuisine_description != " Not Listed/Not Applicable") %>%
   separate(inspection_date, into = c("date", "remove"), sep ="T")%>%
   select(-remove)%>%
   mutate(inspection_num = row_number(),
@@ -45,7 +47,8 @@ filter(grade %in% c("A", "B", "C") &
          month = factor(month, levels = month.name),
          year = as.numeric(substr(date, 1, 4))) %>% 
   select(inspection_num, id, date, month, year, boro, grade, score, dba, 
-         cusin, street, zipcode, violation_description, critical_flag, inspection_type, violation_code)
+         cusin, street, zipcode, violation_description, critical_flag, inspection_type,
+         violation_code, action)
 
 # Create dataset with distinct inspection dates, types, and camis(restaurant_ID)
 distinct_restaurants = tidy_restaurant %>%
@@ -54,11 +57,42 @@ distinct_restaurants = tidy_restaurant %>%
   filter(date != "1900-01-01" & substr(date, 1, 4) != "2012") %>%
   mutate(score = as.numeric(score))
 
-# Create dataset that counts number of violations 
+# Create dataset that counts number of violations per restaurant 
 violations = tidy_restaurant %>%
   filter(date != "1900-01-01" & substr(date, 1, 4) != "2012" & !is.na(violation_code)) %>%
-  group_by(id, date) %>%
+  group_by(id, date, cusin) %>%
   count()
+
+# Data for association between number of restaurants of cuisine type vs. proportion of critical flags
+
+# Number of restaurants in each cuisine type
+  ncuisines = distinct_restaurants %>%
+    group_by(cusin) %>%
+    count() %>%
+    rename(nresto = n)
+  
+# Number of violations 
+  violations = tidy_restaurant %>%
+    filter(date != "1900-01-01" & substr(date, 1, 4) != "2012" & !is.na(violation_code)) %>%
+    group_by(id, date, cusin) %>%
+    count() %>%
+    rename(nviolations = n) %>%
+    # For restaurants that were inspected multiple times, get median number of violations
+    group_by(id, cusin) %>%
+    summarize(mdn_violations = median(nviolations),
+              min_violations = min(nviolations),
+              max_violations = max(nviolations)) %>%
+    # Take the median number of violations 
+    group_by(cusin) %>%
+    summarize(max_viol = max(max_violations),
+              mdn_viol = median(max_violations),
+              mean_viol = mean(max_violations))
+
+# Merge number of restaurants with number of violations by cuisine type
+cuisine_violations = left_join(ncuisines, violations, by = "cusin")
+  
+    
+
 
 ```
 
@@ -120,10 +154,20 @@ tidy_restaurant %>%
 
 ```
 
-### Chart D
+### Number of restaurants by cuisine type and number of violations by a single restaurant
 
-```{r}
+```{r scatter}
 
+cuisine_violations %>%
+  mutate(text_label = str_c("Cuisine: ", cusin, 
+                            "\nNumber of restaurants: ", format(nresto, nsmall=1, big.mark = ","),
+                            "\nMax violations: ", max_viol)) %>%
+  plot_ly(x = ~max_viol, y = ~nresto, type = "scatter", mode = "markers",
+          text = ~text_label) %>%
+    layout(
+      xaxis = list(title = "Number of restaurants per cuisine type"),
+      yaxis = list(title = "Max violations by a restaurant")
+    )
 
 
 ```
