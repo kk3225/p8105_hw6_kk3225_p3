@@ -99,9 +99,23 @@ tidy_restaurant%>%
 Column {data-width=350}
 -----------------------------------------------------------------------
 
-### Chart C
+### Critical violations in year 2016
 
-```{r}
+```{r critical_flags}
+tidy_restaurant %>%
+  filter(critical_flag != "Not Applicable" & year == 2016) %>%
+  group_by(boro, month, critical_flag) %>%
+  count() %>% 
+  ungroup() %>%
+  spread(key = critical_flag, value = n) %>%
+  clean_names() %>% 
+  mutate(pct_critical = 100 * (critical / (critical + not_critical)),
+         pct_critical = round(pct_critical, 2)) %>%
+  plot_ly (x = ~month, y = ~critical, type = "scatter", mode = "lines", color = ~boro) %>%
+    layout(
+      xaxis = list(title = "Month"),
+      yaxis = list(title = "Total critical violations")
+    )
 
 
 ```
@@ -109,6 +123,7 @@ Column {data-width=350}
 ### Chart D
 
 ```{r}
+
 
 
 ```
