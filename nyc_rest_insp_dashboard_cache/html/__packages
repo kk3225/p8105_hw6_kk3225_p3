@@ -1,5 +1,6 @@
 base
 flexdashboard
+magrittr
 tidyverse
 ggplot2
 tibble
@@ -11,3 +12,11 @@ httr
 jsonlite
 plotly
 janitor
+tidytext
+stringr
+forcats
+viridisLite
+viridis
+ggridges
+bindrcpp
+lubridate

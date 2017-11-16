@@ -4,48 +4,62 @@ output:
   flexdashboard::flex_dashboard:
     orientation: columns
     vertical_layout: fill
-editor_options: 
-  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
 library(flexdashboard)
-```
-
-```{r setup_data, cache = TRUE}
-# Attach required libraries
 library(tidyverse)
-library(httr)
-library(jsonlite)
 library(plotly)
 library(readr)
 library(janitor)
-library(tidyverse)
 library(tidytext)
 library(stringr)
 library(forcats)
 library(viridisLite)
 library(viridis)
-library(ggplot2)
-library(ggridges)
-library(stats)
+library(lubridate)
+#library(ggplot2)
+#library(ggridges)
+#library(stats)
+```
+
+```{r setup_data, cache = TRUE}
 
 # Read NYC inspections data
 nyc_inspections = read_csv("./data/DOHMH_New_York_City_Restaurant_Inspection_Results.csv.gz",
                            col_types = "cccccccccccccccccc", na = c("NA", "N/A")) %>%
-    clean_names()
-  
+  clean_names() %>%
+  arrange(inspection_date, camis)
+
+# Tidy up the inspections data
 tidy_restaurant = nyc_inspections %>%  
-filter(grade %in% c("A", "B", "C"),
+filter(grade %in% c("A", "B", "C") & 
        !boro %in% "Missing") %>% 
   separate(inspection_date, into = c("date", "remove"), sep ="T")%>%
   select(-remove)%>%
   mutate(inspection_num = row_number(),
          boro = str_to_title(boro),
          id = camis,
-         cusin= cuisine_description
-         ) %>% 
-  select(inspection_num, id, date, boro, grade, score, dba, cuisine_description, street, zipcode, violation_description, critical_flag)
+         cusin = cuisine_description,
+         month = months(as.Date(date)),
+         month = factor(month, levels = month.name),
+         year = as.numeric(substr(date, 1, 4))) %>% 
+  select(inspection_num, id, date, month, year, boro, grade, score, dba, 
+         cusin, street, zipcode, violation_description, critical_flag, inspection_type, violation_code)
+
+# Create dataset with distinct inspection dates, types, and camis(restaurant_ID)
+distinct_restaurants = tidy_restaurant %>%
+  distinct(date, inspection_type, id, .keep_all = TRUE) %>%
+  arrange(date, inspection_type) %>%
+  filter(date != "1900-01-01" & substr(date, 1, 4) != "2012") %>%
+  mutate(score = as.numeric(score))
+
+# Create dataset that counts number of violations 
+violations = tidy_restaurant %>%
+  filter(date != "1900-01-01" & substr(date, 1, 4) != "2012" & !is.na(violation_code)) %>%
+  group_by(id, date) %>%
+  count()
+
 ```
 
 
@@ -56,8 +70,8 @@ Column {data-width=350}
 
 ```{r}
 tidy_restaurant%>%
-  select(boro,grade)%>%
-  count(boro,grade)%>%
+  select(boro, grade)%>%
+  count(boro, grade)%>%
   mutate(boro = fct_reorder(boro, n))%>%
   spread(key = grade, value =n)%>%
   mutate(total= A+B+C,
@@ -67,7 +81,7 @@ tidy_restaurant%>%
  plot_ly(x = ~boro, y = ~A, type = 'bar', name = 'Grade A')%>% 
   add_trace(y = ~B, name = 'Grade B') %>% 
   add_trace(y = ~C, name = 'Grade C') %>% 
-  layout(title = "Percentage of Grades for Each Borough in NYC", yaxis = list(title = 'Percentage (%)'),barmode = "stack")
+  layout(title = "Percentage of Grades for Each Borough in NYC", yaxis = list(title = 'Percentage (%)'), barmode = "stack")
 ```
 
 ### Chart B
@@ -78,7 +92,7 @@ tidy_restaurant%>%
          date = lubridate::floor_date(date, unit ="month"))%>%
   count(date, grade)%>%
   filter(date!='1900-01-01')%>%  
-  plot_ly(x = ~date, y = ~n,type = 'scatter', mode = 'lines', color = ~grade)%>%
+  plot_ly(x = ~date, y = ~n, type = 'scatter', mode = 'lines', color = ~grade)%>%
   layout(title = "Change of the Number of Grades in Time", yaxis = list(title = "Freq of Grades"), xaxis = list(title = "Time")) 
 ```
 
@@ -89,10 +103,12 @@ Column {data-width=350}
 
 ```{r}
 
+
 ```
 
 ### Chart D
 
 ```{r}
+
 
 ```
